@@ -17,7 +17,7 @@ This application is a command-line applicaton. This application keeps track of e
 - [Questions](#questions)
 
 ## Installation
-To install download off github, then run an npm i in the command line. Then enter the mysql client and run the schema.sql and the seeds.sql if you would like to test. Next add you mysql information to the .env file. Then you are ready to run the node application.
+To install download off github, then run an npm i in the command line. Then enter the mysql client and run the schema.sql and the seeds.sql if you would like to test. Next add your mysql information to the .env file. Then you are ready to run the node application.
 
 ## Usage
 To use follow the prompts to view and edit the database from the command line.
