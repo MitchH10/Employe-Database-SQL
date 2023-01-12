@@ -3,6 +3,8 @@
 ## Description
 This application is a command-line applicaton. This application keeps track of employees, roles, and departments of a company. Add employees, add roles, add departments and keep track of everything.
 
+![Alt text](./img/Screenshot.png "Screenshot")
+
 ## Video Showcase Link
 [https://drive.google.com/file/d/1EU6umMNPteYIej-UBDmcunxTksrV-xHK/view](https://drive.google.com/file/d/1EU6umMNPteYIej-UBDmcunxTksrV-xHK/view)
 
