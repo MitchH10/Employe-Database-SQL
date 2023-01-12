@@ -4,26 +4,26 @@ const cTable = require('console.table');
 require('dotenv').config()
 let currentChoice;
 
-
+//init function in order to use async and await
 async function init() {
+    //connection to mysql
     const db = await mysql.createConnection(
     {
         host: 'localhost',
     // MySQL username,
     user: process.env.DB_USER,
-    // TODO: Add MySQL password
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
     }
     );
 
-
+    //Starting message
     console.log(`------------------------------------------------------------
                 Welcome to the Employee Database
 ------------------------------------------------------------`);
     mainPrompt();
 
-
+//the main inquirer prompt
     function mainPrompt() {
         inquirer
         .prompt([
@@ -40,12 +40,13 @@ async function init() {
                 console.log("Exiting");
                 process.exit();
             } else {
+                //send to menuHandler function
                 menuHandler(response.menu);
             }
         })
     }
     
-    
+    //function for directing user after the main prompt
     function menuHandler(selection){
         switch (selection) {
             case 'View all departments':
@@ -72,26 +73,34 @@ async function init() {
         }
     } 
     
+    //view department function
     async function viewDepartments() {
+        //query for the departments
         const results = await db.execute('SELECT * FROM department;');
+        //output results
             console.log('\n');
             console.table("Department", results[0]);
             console.log('\n');
+        //delay to let the table log correctly before sending user the main prompt
         setTimeout(() => {
             mainPrompt();
         }, 500);
     }
     
+    //view roles function
     async function viewRoles() {
+        //query to get the role information with a join query
         const results = await db.execute('SELECT role.id, role.title, department.name AS department, role.salary FROM role JOIN department ON role.department_id = department.id ORDER BY id;');
             console.log('\n');
             console.table("Roles", results[0]);
             console.log('\n');
+        //delay to let the table log correctly before sending user the main prompt
         setTimeout(() => {
             mainPrompt();
         }, 500);
     }
     
+    //view employees function
     async function viewEmployees(){
         //used to modify the returned query data
         let empList = [];
@@ -122,7 +131,9 @@ async function init() {
         }, 500);
     }
     
+    //add a department function
     function addDepartment() {
+        //prompt for name of new department
         inquirer
         .prompt([
             {
@@ -132,19 +143,25 @@ async function init() {
             }
         ])
         .then(async (response) => {
+            //insert new department name into table
             await db.execute('INSERT INTO department (name) VALUES (?)', [response.department])
+            //success feedback
             console.log(`Successfully added ${response.department} to the departments table`);
+            //delay to let the table log correctly before sending user the main prompt
             setTimeout(() => {
                 mainPrompt();
             }, 500);
         })
     }
     
+    //add a role function
     async function addRole() {
+        //get all department names for the prompt
         let departments = [];
         const results = await db.execute('SELECT name FROM department')
         departments = results[0];
 
+        //prompt for title, salary, and which department
         inquirer
         .prompt([
             {
@@ -165,22 +182,29 @@ async function init() {
             }
         ])
         .then( async (response) => {
+            //converting chosen department into the corresponding department id
             let departmentID;
             let departmentInt;
+            //query for department id with chosen name
             let results = await db.execute('SELECT id FROM department WHERE name = ?', [response.department])
             departmentID = results[0];
             departmentID.forEach(element => {
                 departmentInt = parseInt(element.id);
             })
+            //fianal query to insert new role information into the role table
             await db.query('INSERT INTO role (title, salary, department_id) VALUES (?,?,?)', [response.title, response.salary, departmentInt])
+            //success feedback
             console.log(`Successfully added ${response.title} to the ${response.department} department`);
+            //delay to let the table log correctly before sending user the main prompt
             setTimeout(() => {
                 mainPrompt();
             }, 500);
         })
     }
     
+    // add an employee function
     async function addEmployee() {
+        //get role names for prompt
         let roles = [];
         let preRoles = [];
         const rolResults = await db.execute('SELECT title FROM role ORDER BY id');
@@ -189,6 +213,7 @@ async function init() {
             roles.push(element.title);
         });
         
+        //get employee names for prompt for the employee's manager
         let employees = [];
         const empResults = await db.execute('SELECT first_name, last_name FROM employee ORDER BY id');
         employees = empResults[0];
@@ -198,6 +223,7 @@ async function init() {
         });
         firstAndLast.push('None');
 
+        //prompt for first name, last name, role, and employee's manager
         inquirer
         .prompt([
             {
@@ -223,6 +249,7 @@ async function init() {
                 choices: firstAndLast
             }
         ]).then( async (response) => {
+            //turn role selected into role id
             let roleID;
             let roleInt;
             let managerID;
@@ -231,6 +258,7 @@ async function init() {
             roleID.forEach(element => {
                 roleInt = parseInt(element.id);
             })
+            //turn manager selected into manager id or null
             if (response.manager == 'None') {
                 managerID = null;
             } else {
@@ -245,16 +273,19 @@ async function init() {
                     }
             })
             }
+            //final query to insert employee information into the employee table
             await db.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?,?,?,?)', [response.firstName, response.lastName, roleInt, managerID]);
             console.log(`Added ${response.firstName} ${response.lastName} with role id of: ${roleInt} and manager id of: ${managerID} to employee table.`)
-            
+            //delay to let the table log correctly before sending user the main prompt
             setTimeout(() => {
                 mainPrompt();
             }, 500);
         })
     }
     
+    //update employee function for updating role or manager
     async function updateEmployee() {
+        //get employee names for prompt which employee to update
         let employees = [];
         const empResults = await db.execute('SELECT first_name, last_name FROM employee ORDER BY id');
         employees = empResults[0];
@@ -263,6 +294,7 @@ async function init() {
             firstAndLast.push(`${element.first_name} ${element.last_name}`);
         });
 
+        //prompt which employee to update and what the user wants to update
         inquirer
         .prompt([
             {
@@ -278,24 +310,25 @@ async function init() {
                 name: 'answer'
             }
         ]).then(response => {
-                let managerID;
-                let manCount = 1;
+                //get the employee id number from selected name
+                let empID;
+                let empCount = 1;
                 let found = false;
                 firstAndLast.forEach(element=> {
                     if ((element == response.person) && !found) {
-                        managerID = manCount;
+                        empID = empCount;
                         found = true;
                     } else {
-                        manCount++;
+                        empCount++;
                     }
                 });
-
+                //switch to send employee id to update functions based off user choice
                 switch (response.answer) {
                     case "Update employee's role":
-                        updateEmpRole(managerID);
+                        updateEmpRole(empID);
                         break;
                     case "Update employee's manager":
-                        updateEmpManager(managerID);
+                        updateEmpManager(empID);
                         break;
                 }
                 
@@ -303,7 +336,9 @@ async function init() {
         })
     }
     
+    //update employee role function
     async function updateEmpRole(empID) {
+        //get all role names for prompt
         let roles = [];
         let preRoles = [];
         const rolResults = await db.execute('SELECT title FROM role ORDER BY id');
@@ -312,6 +347,7 @@ async function init() {
             roles.push(element.title);
         });
 
+        //prompt for new role
         inquirer
         .prompt([
             {
@@ -321,6 +357,7 @@ async function init() {
                 message: 'What is the new role?'
             }
         ]).then(async response => {
+            //get role id from selected role name
             let roleID;
             let roleInt;
             let rolResults = await db.execute('SELECT id FROM role WHERE title = ?', [response.role]);
@@ -329,16 +366,19 @@ async function init() {
                 roleInt = parseInt(element.id);
             })
 
+            //final query to update employee role id
             await db.execute('UPDATE employee SET role_id = ? WHERE id = ?', [roleInt, empID]);
             console.log(`Updated role_id to ${roleInt} at employee id: ${empID}`);
-
+            //delay to let the table log correctly before sending user the main prompt
             setTimeout(() => {
                 mainPrompt();
             }, 500);
         })
     }
 
+    //update employee manager function
     async function updateEmpManager(empID) {
+        //get list of employee names for prompt
         let employees = [];
         const empResults = await db.execute('SELECT first_name, last_name FROM employee ORDER BY id');
         employees = empResults[0];
@@ -348,6 +388,7 @@ async function init() {
         });
         firstAndLast.push('None');
 
+        //ask who new manager is
         inquirer
         .prompt([
             {
@@ -357,6 +398,7 @@ async function init() {
                 name: 'person'
             }
         ]).then(async response => {
+            //get manager id for selected name
             let managerID;
             if (response.person == 'None') {
                 managerID = null;
@@ -373,9 +415,10 @@ async function init() {
             })
             }
             
+            //final query where employee manager id is updated with selected
             await db.execute('UPDATE employee SET manager_id = ? WHERE id = ?', [managerID, empID]);
             console.log(`Updated manager_id to ${managerID} at employee id: ${empID}`);
-
+            //delay before sending user the main prompt
             setTimeout(() => {
                 mainPrompt();
             }, 500);
