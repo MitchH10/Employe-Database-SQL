@@ -93,22 +93,30 @@ async function init() {
     }
     
     async function viewEmployees(){
+        //used to modify the returned query data
         let empList = [];
         let employees = [];
+        //this block is where I query to make my first and last name array of all employees
         const empResults = await db.execute('SELECT first_name, last_name FROM employee ORDER BY id');
         employees = empResults[0];
         let firstAndLast = [];
         employees.forEach(element => {
             firstAndLast.push(`${element.first_name} ${element.last_name}`);
         });
+        //this is the main query for pulling the employee information and joining all the tables, notice the last SELECT statement: employee.manager_id AS manager
         const results = await db.execute('SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, employee.manager_id AS manager FROM employee JOIN role ON role.id = employee.role_id JOIN department ON role.department_id = department.id ORDER BY id;');
+            //moving my results onto an easy to work with array
             empList = results[0];
+            //iterating over the array at each employee to set the manager name using the firstAndLast array
             empList.forEach(element =>{
+                //using the element.manager (currently the manager_id) to find the managers name in the firstAndLast array
                 element.manager = firstAndLast[element.manager];
             })
+            //final output to the console
             console.log('\n');
             console.table("Employees", results[0]);
             console.log('\n');
+        //this I used as a small delay to render the table fully then proceed back to the mainPrompt inquirer function
         setTimeout(() => {
             mainPrompt();
         }, 500);
@@ -136,7 +144,6 @@ async function init() {
         let departments = [];
         const results = await db.execute('SELECT name FROM department')
         departments = results[0];
-        console.log(departments);
 
         inquirer
         .prompt([
