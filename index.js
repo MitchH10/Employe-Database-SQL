@@ -119,7 +119,7 @@ async function init() {
             //iterating over the array at each employee to set the manager name using the firstAndLast array
             empList.forEach(element =>{
                 //using the element.manager (currently the manager_id) to find the managers name in the firstAndLast array
-                element.manager = firstAndLast[element.manager];
+                element.manager = firstAndLast[element.manager-1];
             })
             //final output to the console
             console.log('\n');
